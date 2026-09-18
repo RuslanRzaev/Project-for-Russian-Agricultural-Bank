@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Смарт-контракт — засуха 2025</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0;
+               background: #eef2f7; color: #1f2d3d; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+        .title-page { background: white; border-radius: 12px; padding: 40px;
+                      box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h1 { font-size: 26px; margin: 0 0 8px 0;
+             border-bottom: 3px solid #dc3545; padding-bottom: 12px; }
+        .subtitle { color: #6b7a90; font-size: 14px; margin-bottom: 32px; }
+        .section-title { font-size: 15px; font-weight: 600; color: #dc3545;
+                         margin: 28px 0 12px 0; padding-bottom: 6px;
+                         border-bottom: 1px solid #e0e6ed;
+                         text-transform: uppercase; letter-spacing: 0.5px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .field { display: flex; flex-direction: column; }
+        .field label { font-size: 13px; color: #6b7a90; margin-bottom: 6px;
+                       font-weight: 500; }
+        .field input { padding: 10px 12px; border: 1px solid #cbd5e1;
+                       border-radius: 6px; font-size: 14px; background: #fafbfc; }
+        .field input:focus { outline: none; border-color: #dc3545; background: white; }
+        .field .hint { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+        .drought-badge {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: #fff5f5; border: 2px solid #dc3545;
+            border-radius: 10px; padding: 16px 20px; font-size: 16px;
+            font-weight: 600; color: #721c24;
+        }
+        .drought-badge .icon { font-size: 32px; }
+        .btn { padding: 14px 32px; border: none; border-radius: 8px;
+               font-size: 16px; font-weight: 600; cursor: pointer; }
+        .btn-primary { background: #dc3545; color: white; }
+        .btn-primary:hover { background: #a71d2a; }
+        .btn-secondary { background: #e2e8f0; color: #1f2d3d; }
+        .btn-secondary:hover { background: #cbd5e1; }
+        .actions { display: flex; gap: 12px; justify-content: flex-end;
+                   margin-top: 32px; padding-top: 20px;
+                   border-top: 1px solid #e0e6ed; }
+        .check-page { display: none; }
+        .check-page.active { display: block; }
+        .title-page.hidden { display: none; }
+        .layout { display: flex; gap: 16px; flex-wrap: wrap; }
+        .left { flex: 1; min-width: 300px; }
+        .right { flex: 2; min-width: 400px; }
+        .card { background: white; padding: 20px; border-radius: 12px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 16px; }
+        .card h3 { margin: 0 0 14px 0; font-size: 15px; color: #dc3545;
+                   text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-row { display: flex; justify-content: space-between;
+                    padding: 8px 0; border-bottom: 1px solid #f1f5f9;
+                    font-size: 14px; }
+        .info-row:last-child { border-bottom: none; }
+        .info-row .label { color: #6b7a90; }
+        .info-row .value { font-weight: 600; text-align: right; }
+        #map { height: 400px; border-radius: 8px; }
+        #status { padding: 20px; border-radius: 12px; background: white;
+                  white-space: pre-wrap; margin-top: 16px;
+                  box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        #status h3 { margin-top: 0; }
+        .verified { color: #28a745; }
+        .missing { color: #dc3545; }
+        .state-badge { display: inline-block; padding: 6px 14px;
+                       border-radius: 20px; font-size: 13px; font-weight: 600; }
+        .state-PAID { background: #d4edda; color: #155724; }
+        .state-PARTIAL_PAID { background: #fff3cd; color: #856404; }
+        .state-NOT_ENOUGH_DATA { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <div id="titlePage" class="title-page">
+            <h1>🌵 Договор страхования от засухи</h1>
+            <p class="subtitle">Омская область · Смарт-контракт на основе открытых данных</p>
+
+            <div class="section-title">1. Сведения о договоре</div>
+            <div class="grid">
+                <div class="field">
+                    <label>Номер договора</label>
+                    <input id="contractNumber" value="ДГ-ЗАСУХА-2025-0001" />
+                </div>
+                <div class="field">
+                    <label>Дата заключения</label>
+                    <input id="contractDate" type="date" value="2025-06-15" />
+                </div>
+            </div>
+            <div class="grid" style="margin-top: 16px;">
+                <div class="field">
+                    <label>Страхователь</label>
+                    <input id="insurer" value="Иванов И.И." />
+                </div>
+                <div class="field">
+                    <label>Культура</label>
+                    <input id="culture" value="Пшеница яровая" />
+                </div>
+            </div>
+
+            <div class="section-title">2. Страховой случай</div>
+            <div class="drought-badge">
+                <span class="icon">🌵</span>
+                <span>Засуха (потеря урожая из-за засушливых условий)</span>
+            </div>
+            <input type="hidden" id="eventType" value="drought" />
+
+            <div class="section-title">3. Территория страхования</div>
+            <div class="grid grid-3">
+                <div class="field">
+                    <label>Широта центра</label>
+                    <input id="lat" type="number" step="0.0001" value="54.99" />
+                </div>
+                <div class="field">
+                    <label>Долгота центра</label>
+                    <input id="lon" type="number" step="0.0001" value="73.32" />
+                </div>
+                <div class="field">
+                    <label>Радиус (км)</label>
+                    <input id="radius" type="number" step="1" value="50" />
+                </div>
+            </div>
+            <div class="grid" style="margin-top: 16px;">
+                <div class="field">
+                    <label>Административный район</label>
+                    <input id="district" value="Омский" />
+                </div>
+                <div class="field">
+                    <label>Площадь поля (га)</label>
+                    <input id="area" type="number" value="500" />
+                </div>
+            </div>
+
+            <div class="section-title">4. Финансовые условия и период</div>
+            <div class="grid">
+                <div class="field">
+                    <label>Страховая сумма (руб.)</label>
+                    <input id="sum" type="number" value="1000000" />
+                    <div class="hint">Выплата 30% при полном подтверждении</div>
+                </div>
+                <div class="field">
+                    <label>Дата начала</label>
+                    <input id="start" type="date" value="2025-07-01" />
+                </div>
+            </div>
+            <div class="grid" style="margin-top: 16px;">
+                <div class="field">
+                    <label>Дата окончания</label>
+                    <input id="end" type="date" value="2025-08-15" />
+                </div>
+                <div class="field">
+                    <label>Период проверки</label>
+                    <input value="Июль–август 2025 — засуха" disabled />
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="resetForm()">Очистить</button>
+                <button class="btn btn-primary" onclick="goToCheck()">Проверить договор →</button>
+            </div>
+        </div>
+
+        <div id="checkPage" class="check-page">
+            <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h1 style="margin: 0; font-size: 22px;">🔍 Проверка договора (засуха)</h1>
+                <button class="btn btn-secondary" onclick="goBack()">← Назад к договору</button>
+            </div>
+            <div class="layout">
+                <div class="left">
+                    <div class="card">
+                        <h3>📋 Данные договора</h3>
+                        <div id="contractSummary"></div>
+                    </div>
+                    <div class="card">
+                        <h3>⚙️ Действия</h3>
+                        <button class="btn btn-primary" style="width:100%; margin-bottom:8px;"
+                                onclick="runCheck()">Запустить проверку</button>
+                        <button class="btn btn-secondary" style="width:100%;"
+                                onclick="goBack()">Изменить договор</button>
+                    </div>
+                </div>
+                <div class="right">
+                    <div class="card">
+                        <h3>🗺️ Территория страхования</h3>
+                        <div id="map"></div>
+                    </div>
+                    <div id="status">Нажмите «Запустить проверку», чтобы получить результат.</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let map = null, marker = null, circle = null;
+
+        function goToCheck() {
+            const lat = parseFloat(document.getElementById('lat').value);
+            const lon = parseFloat(document.getElementById('lon').value);
+            const radius = parseFloat(document.getElementById('radius').value);
+            if (isNaN(lat) || isNaN(lon) || isNaN(radius) || radius <= 0) {
+                alert('Проверьте координаты и радиус'); return;
+            }
+            const summary = `
+                <div class="info-row"><span class="label">Номер</span><span class="value">${document.getElementById('contractNumber').value}</span></div>
+                <div class="info-row"><span class="label">Страхователь</span><span class="value">${document.getElementById('insurer').value}</span></div>
+                <div class="info-row"><span class="label">Культура</span><span class="value">${document.getElementById('culture').value}</span></div>
+                <div class="info-row"><span class="label">Случай</span><span class="value">🌵 Засуха</span></div>
+                <div class="info-row"><span class="label">Район</span><span class="value">${document.getElementById('district').value}</span></div>
+                <div class="info-row"><span class="label">Координаты</span><span class="value">${lat}, ${lon}</span></div>
+                <div class="info-row"><span class="label">Радиус</span><span class="value">${radius} км</span></div>
+                <div class="info-row"><span class="label">Площадь</span><span class="value">${document.getElementById('area').value} га</span></div>
+                <div class="info-row"><span class="label">Сумма</span><span class="value">${parseInt(document.getElementById('sum').value).toLocaleString()} руб.</span></div>
+                <div class="info-row"><span class="label">Период</span><span class="value">${document.getElementById('start').value} — ${document.getElementById('end').value}</span></div>
+            `;
+            document.getElementById('contractSummary').innerHTML = summary;
+            document.getElementById('titlePage').classList.add('hidden');
+            document.getElementById('checkPage').classList.add('active');
+            setTimeout(initMap, 50);
+        }
+
+        function goBack() {
+            document.getElementById('checkPage').classList.remove('active');
+            document.getElementById('titlePage').classList.remove('hidden');
+        }
+
+        function resetForm() {
+            if (confirm('Очистить?')) location.reload();
+        }
+
+        function initMap() {
+            const lat = parseFloat(document.getElementById('lat').value);
+            const lon = parseFloat(document.getElementById('lon').value);
+            const radius = parseFloat(document.getElementById('radius').value);
+            if (map) { map.remove(); map = null; }
+            map = L.map('map').setView([lat, lon], 8);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                { attribution: '© OpenStreetMap' }).addTo(map);
+            marker = L.marker([lat, lon]).addTo(map)
+                .bindPopup(`Центр: ${lat}, ${lon}`).openPopup();
+            circle = L.circle([lat, lon], {
+                radius: radius * 1000, color: '#dc3545',
+                fillColor: '#dc3545', fillOpacity: 0.15,
+            }).addTo(map);
+            map.fitBounds(circle.getBounds());
+        }
+
+        async function runCheck() {
+            const payload = {
+                latitude: parseFloat(document.getElementById('lat').value) || 54.99,
+                longitude: parseFloat(document.getElementById('lon').value) || 73.32,
+                radius_km: parseFloat(document.getElementById('radius').value) || 50,
+                district: document.getElementById('district').value || 'Омский',
+                insurance_sum: parseFloat(document.getElementById('sum').value) || 1000000,
+                start_date: document.getElementById('start').value || '2025-07-01',
+                end_date: document.getElementById('end').value || '2025-08-15',
+            };
+            document.getElementById('status').innerHTML = '⏳ Проверяем данные...';
+            try {
+                const r = await (await fetch('/api/check_contract', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                })).json();
+                const badgeClass = 'state-' + r.state;
+                let html = `<h3>Состояние: <span class="state-badge ${badgeClass}">${r.state}</span></h3>`;
+                html += `<p style="font-size:18px;">💰 Выплата: <b>${r.payout.toLocaleString()} руб.</b></p>`;
+                html += `<p style="color:#6b7a90; font-size:13px;">📍 ${r.coordinates.lat}, ${r.coordinates.lon} (радиус ${r.coordinates.radius_km} км)</p>`;
+                html += `<p style="color:#6b7a90; font-size:13px;">🔲 BBOX: ${r.bbox}</p>`;
+                if (r.verified.length) {
+                    html += `<h4 class="verified">✅ Подтверждено:</h4><ul>`;
+                    r.verified.forEach(s => html += `<li><b>${s.source}</b>: ${s.details}</li>`);
+                    html += `</ul>`;
+                }
+                if (r.missing_info.length) {
+                    html += `<h4 class="missing">❌ Чего не хватает в открытых данных:</h4><ul>`;
+                    r.missing_info.forEach(i => html += `<li>${i}</li>`);
+                    html += `</ul>`;
+                }
+                document.getElementById('status').innerHTML = html;
+            } catch (e) {
+                document.getElementById('status').innerHTML = '❌ Ошибка: ' + e.message;
+            }
+        }
+    </script>
+</body>
+</html>
